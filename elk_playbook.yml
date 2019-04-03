@@ -1,0 +1,39 @@
+---
+
+- hosts: logs
+  gather_facts: yes
+
+  vars_files:
+    - elk_vars.yml
+
+  roles:
+    - geerlingguy.repo-epel
+    - geerlingguy.java
+    - geerlingguy.nginx
+    - geerlingguy.elasticsearch
+    - geerlingguy.elasticsearch-curator
+    - geerlingguy.kibana
+    - geerlingguy.logstash
+    - geerlingguy.logstash-forwarder
+
+    
+  tasks:
+    - name: Remove geerlingguys 14-solr.conf that causes problems with multiline plugin for Logstash
+      file:
+        state: absent
+        path: /etc/logstash/conf.d/14-solr.conf
+    
+    - name: Enable http input plugin for Logstash
+      copy:
+        dest: /etc/logstash/conf.d/02-http.conf
+        content: |
+          input {
+            http {
+              id => "my_http_plugin_id"
+              port => 8080
+            }
+          }
+    - name: Restart logstach so it reads update conf files
+      service:
+        name: logstash
+        state: restarted
